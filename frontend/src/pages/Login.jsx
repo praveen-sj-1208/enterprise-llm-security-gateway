@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+const API = import.meta.env.VITE_API_URL;
+
 function Login() {
 
     const navigate = useNavigate();
@@ -22,7 +24,7 @@ function Login() {
             formData.append("password", password);
 
             const response = await axios.post(
-                "http://127.0.0.1:8000/auth/login",
+                `${API}/auth/login`,
                 formData,
                 {
                     headers: {
@@ -43,19 +45,15 @@ function Login() {
 
             navigate("/chat");
 
+        } catch (err) {
+
+            console.log(err);
+
+            setMessage(
+                err.response?.data?.detail || "Login Failed"
+            );
+
         }
-
-        catch (err) {
-
-    console.log(err);
-
-    console.log(err.response);
-
-    setMessage(
-        err.response?.data?.detail || "Login Failed"
-    );
-
-}
 
     };
 
