@@ -1,84 +1,141 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import "../styles/login.css";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-import Login from "./pages/Login";
-import Chat from "./pages/Chat";
-import AuditLogs from "./pages/AuditLogs";
-import ChatHistory from "./pages/ChatHistory";
-import Dashboard from "./pages/Dashboard";
+const API = import.meta.env.VITE_API_URL;
 
-import ProtectedRoute from "./components/ProtectedRoute";
-import Settings from "./pages/Settings";
+function Login() {
 
-function App() {
+    const navigate = useNavigate();
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [message, setMessage] = useState("");
+
+    const login = async () => {
+
+        try {
+
+            const formData = new URLSearchParams();
+
+            formData.append("username", username);
+            formData.append("password", password);
+
+            const response = await axios.post(
+                `${API}/auth/login`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                }
+            );
+
+            localStorage.setItem(
+                "token",
+                response.data.access_token
+            );
+
+            localStorage.setItem(
+                "username",
+                username
+            );
+
+            navigate("/chat");
+
+        } catch (err) {
+
+            console.log(err);
+
+            setMessage(
+                err.response?.data?.detail || "Login Failed"
+            );
+
+        }
+
+    };
 
     return (
 
-        <BrowserRouter>
+        <div className="login-page">
 
-            <Routes>
+            <div className="login-card">
 
-                <Route
-                    path="/"
-                    element={<Navigate to="/dashboard" />}
-                />
+                <h1 className="login-title">
+                    Enterprise LLM
+                </h1>
 
-                <Route
-                    path="/login"
-                    element={<Login />}
-                />
+                <p className="login-sub">
+                    Security Gateway
+                </p>
 
-                <Route
-                    path="/dashboard"
-                    element={
-                        <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    }
-                />
+                <div className="mb-3">
 
-                <Route
-                    path="/chat"
-                    element={
-                        <ProtectedRoute>
-                            <Chat />
-                        </ProtectedRoute>
-                    }
-                />
+                    <label className="text-light">
+                        Username
+                    </label>
 
-                <Route
-                    path="/audit"
-                    element={
-                        <ProtectedRoute>
-                            <AuditLogs />
-                        </ProtectedRoute>
-                    }
-                />
+                    <input
+                        type="text"
+                        className="form-control"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
 
-                <Route
-                    path="/history"
-                    element={
-                        <ProtectedRoute>
-                            <ChatHistory />
-                        </ProtectedRoute>
-                    }
-                />
+                </div>
 
-                <Route
-                    path="/settings"
-                    element={
-                        <ProtectedRoute>
-                            <Settings />
-                        </ProtectedRoute>
-                    }
-                />
-                
+                <div className="mb-3">
 
-            </Routes>
+                    <label className="text-light">
+                        Password
+                    </label>
 
-        </BrowserRouter>
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        className="form-control"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+
+                </div>
+
+                <div className="show-password">
+
+                    <input
+                        type="checkbox"
+                        checked={showPassword}
+                        onChange={() => setShowPassword(!showPassword)}
+                    />
+
+                    <span className="ms-2">
+                        Show Password
+                    </span>
+
+                </div>
+
+                <button
+                    className="login-btn mt-4"
+                    onClick={login}
+                >
+                    Login
+                </button>
+
+                <p
+                    style={{
+                        color: "red",
+                        marginTop: "15px"
+                    }}
+                >
+                    {message}
+                </p>
+
+            </div>
+
+        </div>
 
     );
-
 }
 
-export default App;
+export default Login;
