@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL;
+// Render Backend URL from Vercel Environment Variable
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Login() {
 
@@ -24,7 +25,7 @@ function Login() {
             formData.append("password", password);
 
             const response = await axios.post(
-                `${API}/auth/login`,
+                `${API_URL}/auth/login`,
                 formData,
                 {
                     headers: {
@@ -33,25 +34,51 @@ function Login() {
                 }
             );
 
+            // Save Token
             localStorage.setItem(
                 "token",
                 response.data.access_token
             );
 
+            // Save Username
             localStorage.setItem(
                 "username",
                 username
             );
 
+            // Save Role (if backend returns it)
+            if (response.data.role) {
+                localStorage.setItem(
+                    "role",
+                    response.data.role
+                );
+            }
+
+            setMessage("");
+
             navigate("/chat");
 
-        } catch (err) {
+        }
 
-            console.log(err);
+        catch (err) {
 
-            setMessage(
-                err.response?.data?.detail || "Login Failed"
-            );
+            console.error(err);
+
+            if (err.response) {
+
+                setMessage(
+                    err.response.data.detail || "Login Failed"
+                );
+
+            }
+
+            else {
+
+                setMessage(
+                    "Cannot connect to server."
+                );
+
+            }
 
         }
 
@@ -80,6 +107,7 @@ function Login() {
                     <input
                         type="text"
                         className="form-control"
+                        placeholder="Enter Username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
@@ -95,6 +123,7 @@ function Login() {
                     <input
                         type={showPassword ? "text" : "password"}
                         className="form-control"
+                        placeholder="Enter Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
@@ -106,7 +135,9 @@ function Login() {
                     <input
                         type="checkbox"
                         checked={showPassword}
-                        onChange={() => setShowPassword(!showPassword)}
+                        onChange={() =>
+                            setShowPassword(!showPassword)
+                        }
                     />
 
                     <span className="ms-2">
@@ -122,20 +153,27 @@ function Login() {
                     Login
                 </button>
 
-                <p
-                    style={{
-                        color: "red",
-                        marginTop: "15px"
-                    }}
-                >
-                    {message}
-                </p>
+                {
+                    message && (
+
+                        <p
+                            style={{
+                                color: "red",
+                                marginTop: "15px"
+                            }}
+                        >
+                            {message}
+                        </p>
+
+                    )
+                }
 
             </div>
 
         </div>
 
     );
+
 }
 
 export default Login;
