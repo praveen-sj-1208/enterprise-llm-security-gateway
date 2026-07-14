@@ -11,6 +11,8 @@ from app.schemas.token import Token
 from app.auth.password import hash_password, verify_password
 from app.auth.jwt_handler import create_access_token
 
+from app.schemas.change_password import ChangePassword
+from app.crud.user import change_password
 
 router = APIRouter(
     prefix="/auth",
@@ -82,6 +84,34 @@ def login(
             "role": db_user.role
         }
     )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+@router.post("/change-password")
+def update_password(
+    request: ChangePassword,
+    db: Session = Depends(get_db)
+):
+
+    result = change_password(
+        db=db,
+        username=request.username,
+        current_password=request.current_password,
+        new_password=request.new_password
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["message"]
+        )
+
+    return {
+        "message": result["message"]
+    }
 
     return {
         "access_token": access_token,

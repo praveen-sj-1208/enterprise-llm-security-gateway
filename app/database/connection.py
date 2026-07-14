@@ -1,21 +1,50 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 import os
 
+# Load Environment Variables
 load_dotenv()
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-from urllib.parse import quote_plus
+# ===============================
+# DATABASE URL (Render / Neon)
+# ===============================
 
-DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD"))
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# ===============================
+# Local PostgreSQL Fallback
+# ===============================
 
-engine = create_engine(DATABASE_URL, echo=True)
+if not DATABASE_URL:
+
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_PORT = os.getenv("DB_PORT", "5432")
+    DB_NAME = os.getenv("DB_NAME", "enterprise_gateway")
+    DB_USER = os.getenv("DB_USER", "postgres")
+    DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD", ""))
+
+    DATABASE_URL = (
+        f"postgresql://{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
+
+print("=" * 60)
+print("Database Configuration")
+print("=" * 60)
+print("DATABASE_URL :", DATABASE_URL.split("@")[1])
+print("=" * 60)
+
+# ===============================
+# SQLAlchemy Engine
+# ===============================
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    echo=True
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -23,20 +52,24 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-print("HOST:", DB_HOST)
-print("USER:", DB_USER)
-print("PASSWORD:", DB_PASSWORD)
-print("URL:", DATABASE_URL)
+# ===============================
+# Connection Test
+# ===============================
 
 try:
-    conn = engine.connect()
-    print("✅ Database Connected Successfully!")
 
-    result = conn.execute(text("SELECT version();"))
-    print(result.fetchone())
+    with engine.connect() as conn:
 
-    conn.close()
+        print("✅ Database Connected Successfully!")
+
+        version = conn.execute(
+            text("SELECT version();")
+        ).fetchone()
+
+        print("PostgreSQL Version:")
+        print(version[0])
 
 except Exception as e:
+
     print("❌ Database Connection Failed!")
     print(e)
